@@ -5,3 +5,4 @@ server:
   disable_csrf: true
   basic_auth: false
   autorun: true
+debug: true
