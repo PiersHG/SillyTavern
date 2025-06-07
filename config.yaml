@@ -7,3 +7,4 @@ server:
   autorun: true
 
 debug: true
+allow_all_ips: true
