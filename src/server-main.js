@@ -216,7 +216,7 @@ initUserStorage(globalThis.DATA_ROOT)
     .then(migrateUserData)
     .then(migrateSystemPrompts)
     .then(verifySecuritySettings)
-    .then(preSetupTasks)
+// await preSetupTasks();
     .then(apply404Middleware)
     .then(() => new ServerStartup(app, cliArgs).start())
     .then(postSetupTasks);
