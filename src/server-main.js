@@ -16,7 +16,6 @@ import helmet from 'helmet';
 import bodyParser from 'body-parser';
 import open from 'open';
 
-// local library imports
 import './fetch-patch.js';
 import { serverDirectory } from './server-directory.js';
 
@@ -104,6 +103,9 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '200mb' }));
 
 const CORS = cors({ origin: 'null', methods: ['OPTIONS'] });
 app.use(CORS);
+
+// 🔥 OVERRIDE WHITELIST MODE
+cliArgs.whitelistMode = false;
 
 if (cliArgs.listen && cliArgs.basicAuthMode) {
     app.use(basicAuthMiddleware);
@@ -216,10 +218,8 @@ initUserStorage(globalThis.DATA_ROOT)
     .then(migrateUserData)
     .then(migrateSystemPrompts)
     .then(verifySecuritySettings)
-// await preSetupTasks();
     .then(apply404Middleware)
-    .then(() => new ServerStartup(app, cliArgs).start())
-// await postSetupTasks();
+    .then(() => new ServerStartup(app, cliArgs).start());
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
