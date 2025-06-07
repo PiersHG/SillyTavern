@@ -22,11 +22,7 @@ import { serverDirectory } from './server-directory.js';
 
 console.log(`Node version: ${process.version}. Running in ${process.env.NODE_ENV} environment. Server directory: ${serverDirectory}`);
 
-// Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
-// https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
-// Safe to remove once support for Node v20 is dropped.
 if (process.versions && process.versions.node && process.versions.node.match(/20\.[0-2]\.0/)) {
-    // @ts-ignore
     if (net.setDefaultAutoSelectFamily) net.setDefaultAutoSelectFamily(false);
 }
 
@@ -69,7 +65,6 @@ import {
 import { UPLOADS_DIRECTORY } from './constants.js';
 import { ensureThumbnailCache } from './endpoints/thumbnails.js';
 
-// Routers
 import { router as usersPublicRouter } from './endpoints/users-public.js';
 import { init as statsInit, onExit as statsOnExit } from './endpoints/stats.js';
 import { checkForNewContent } from './endpoints/content-manager.js';
@@ -77,7 +72,6 @@ import { init as settingsInit } from './endpoints/settings.js';
 import { redirectDeprecatedEndpoints, ServerStartup, setupPrivateEndpoints } from './server-startup.js';
 import { diskCache } from './endpoints/characters.js';
 
-// Unrestrict console logs display limit
 util.inspect.defaultOptions.maxArrayLength = null;
 util.inspect.defaultOptions.maxStringLength = null;
 util.inspect.defaultOptions.depth = 4;
@@ -102,21 +96,13 @@ try {
 }
 
 const app = express();
-app.use(helmet({
-    contentSecurityPolicy: false,
-}));
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(compression());
 app.use(responseTime());
-
 app.use(bodyParser.json({ limit: '200mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '200mb' }));
 
-// CORS Settings //
-const CORS = cors({
-    origin: 'null',
-    methods: ['OPTIONS'],
-});
-
+const CORS = cors({ origin: 'null', methods: ['OPTIONS'] });
 app.use(CORS);
 
 if (cliArgs.listen && cliArgs.basicAuthMode) {
@@ -152,36 +138,18 @@ app.use(cookieSession({
 
 app.use(setUserDataMiddleware);
 
-// CSRF Protection //
 if (!cliArgs.disableCsrf) {
     const csrfSyncProtection = csrfSync({
-        getTokenFromState: (req) => {
-            if (!req.session) {
-                console.error('(CSRF error) getTokenFromState: Session object not initialized');
-                return;
-            }
-            return req.session.csrfToken;
-        },
-        getTokenFromRequest: (req) => {
-            return req.headers['x-csrf-token']?.toString();
-        },
-        storeTokenInState: (req, token) => {
-            if (!req.session) {
-                console.error('(CSRF error) storeTokenInState: Session object not initialized');
-                return;
-            }
-            req.session.csrfToken = token;
-        },
+        getTokenFromState: (req) => req.session?.csrfToken,
+        getTokenFromRequest: (req) => req.headers['x-csrf-token']?.toString(),
+        storeTokenInState: (req, token) => { if (req.session) req.session.csrfToken = token; },
         size: 32,
     });
 
     app.get('/csrf-token', (req, res) => {
-        res.json({
-            'token': csrfSyncProtection.generateToken(req),
-        });
+        res.json({ token: csrfSyncProtection.generateToken(req) });
     });
 
-    // Customize the error message
     csrfSyncProtection.invalidCsrfTokenError.message = color.red('Invalid CSRF token. Please refresh the page and try again.');
     csrfSyncProtection.invalidCsrfTokenError.stack = undefined;
 
@@ -189,192 +157,60 @@ if (!cliArgs.disableCsrf) {
 } else {
     console.warn('\nCSRF protection is disabled. This will make your server vulnerable to CSRF attacks.\n');
     app.get('/csrf-token', (req, res) => {
-        res.json({
-            'token': 'disabled',
-        });
+        res.json({ token: 'disabled' });
     });
 }
 
-// Static files
-// Host index page
-app.get('/', getCacheBusterMiddleware(), (request, response) => {
-    if (shouldRedirectToLogin(request)) {
-        const query = request.url.split('?')[1];
+app.get('/', getCacheBusterMiddleware(), (req, res) => {
+    if (shouldRedirectToLogin(req)) {
+        const query = req.url.split('?')[1];
         const redirectUrl = query ? `/login?${query}` : '/login';
-        return response.redirect(redirectUrl);
+        return res.redirect(redirectUrl);
     }
-
-    return response.sendFile('index.html', { root: path.join(serverDirectory, 'public') });
+    return res.sendFile('index.html', { root: path.join(serverDirectory, 'public') });
 });
 
-// Callback endpoint for OAuth PKCE flows (e.g. OpenRouter)
-app.get('/callback/:source?', (request, response) => {
-    const source = request.params.source;
-    const query = request.url.split('?')[1];
+app.get('/callback/:source?', (req, res) => {
+    const source = req.params.source;
+    const query = req.url.split('?')[1];
     const searchParams = new URLSearchParams();
     source && searchParams.set('source', source);
     query && searchParams.set('query', query);
     const path = `/?${searchParams.toString()}`;
-    return response.redirect(307, path);
+    return res.redirect(307, path);
 });
 
-// Host login page
 app.get('/login', loginPageMiddleware);
 
-// Host frontend assets
 const webpackMiddleware = getWebpackServeMiddleware();
 app.use(webpackMiddleware);
-app.use(express.static(path.join(serverDirectory, 'public'), {}));
+app.use(express.static(path.join(serverDirectory, 'public')));
 
-// Public API
 app.use('/api/users', usersPublicRouter);
 
-// Everything below this line requires authentication
 app.use(requireLoginMiddleware);
-app.post('/api/ping', (request, response) => {
-    if (request.query.extend && request.session) {
-        request.session.touch = Date.now();
-    }
-
-    response.sendStatus(204);
+app.post('/api/ping', (req, res) => {
+    if (req.query.extend && req.session) req.session.touch = Date.now();
+    res.sendStatus(204);
 });
 
-// File uploads
 const uploadsPath = path.join(cliArgs.dataRoot, UPLOADS_DIRECTORY);
 app.use(multer({ dest: uploadsPath, limits: { fieldSize: 10 * 1024 * 1024 } }).single('avatar'));
 app.use(multerMonkeyPatch);
 
-app.get('/version', async function (_, response) {
+app.get('/version', async (_, res) => {
     const data = await getVersion();
-    response.send(data);
+    res.send(data);
 });
 
 redirectDeprecatedEndpoints(app);
 setupPrivateEndpoints(app);
 
-/**
- * Tasks that need to be run before the server starts listening.
- * @returns {Promise<void>}
- */
-async function preSetupTasks() {
-    const version = await getVersion();
-
-    // Print formatted header
-    console.log();
-    console.log(`SillyTavern ${version.pkgVersion}`);
-    if (version.gitBranch) {
-        console.log(`Running '${version.gitBranch}' (${version.gitRevision}) - ${version.commitDate}`);
-        if (!version.isLatest && ['staging', 'release'].includes(version.gitBranch)) {
-            console.log('INFO: Currently not on the latest commit.');
-            console.log('      Run \'git pull\' to update. If you have any merge conflicts, run \'git reset --hard\' and \'git pull\' to reset your branch.');
-        }
-    }
-    console.log();
-
-    const directories = await getUserDirectoriesList();
-    await checkForNewContent(directories);
-    await ensureThumbnailCache(directories);
-    await diskCache.verify(directories);
-    cleanUploads();
-    migrateAccessLog();
-
-    await settingsInit();
-    await statsInit();
-
-    const pluginsDirectory = path.join(serverDirectory, 'plugins');
-    const cleanupPlugins = await loadPlugins(app, pluginsDirectory);
-    const consoleTitle = process.title;
-
-    let isExiting = false;
-    const exitProcess = async () => {
-        if (isExiting) return;
-        isExiting = true;
-        await statsOnExit();
-        if (typeof cleanupPlugins === 'function') {
-            await cleanupPlugins();
-        }
-        diskCache.dispose();
-        setWindowTitle(consoleTitle);
-        process.exit();
-    };
-
-    // Set up event listeners for a graceful shutdown
-    process.on('SIGINT', exitProcess);
-    process.on('SIGTERM', exitProcess);
-    process.on('uncaughtException', (err) => {
-        console.error('Uncaught exception:', err);
-        exitProcess();
-    });
-
-    // Add request proxy.
-    initRequestProxy({ enabled: cliArgs.requestProxyEnabled, url: cliArgs.requestProxyUrl, bypass: cliArgs.requestProxyBypass });
-
-    // Wait for frontend libs to compile
-    await webpackMiddleware.runWebpackCompiler();
-}
-
-/**
- * Tasks that need to be run after the server starts listening.
- * @param {import('./server-startup.js').ServerStartupResult} result The result of the server startup
- * @returns {Promise<void>}
- */
-async function postSetupTasks(result) {
-    const autorunHostname = await cliArgs.getAutorunHostname(result);
-    const autorunUrl = cliArgs.getAutorunUrl(autorunHostname);
-
-    if (cliArgs.autorun) {
-        try {
-            console.log('Launching in a browser...');
-            await open(autorunUrl.toString());
-        } catch (error) {
-            console.error('Failed to launch the browser. Open the URL manually.');
-        }
-    }
-
-    setWindowTitle('SillyTavern WebServer');
-
-    let logListen = 'SillyTavern is listening on';
-
-    if (result.useIPv6 && !result.v6Failed) {
-        logListen += color.green(
-            ' IPv6: ' + cliArgs.getIPv6ListenUrl().host,
-        );
-    }
-
-    if (result.useIPv4 && !result.v4Failed) {
-        logListen += color.green(
-            ' IPv4: ' + cliArgs.getIPv4ListenUrl().host,
-        );
-    }
-
-    const goToLog = 'Go to: ' + color.blue(autorunUrl) + ' to open SillyTavern';
-    const plainGoToLog = removeColorFormatting(goToLog);
-
-    console.log(logListen);
-    if (cliArgs.listen) {
-        console.log();
-        console.log('To limit connections to internal localhost only ([::1] or 127.0.0.1), change the setting in config.yaml to "listen: false".');
-        console.log('Check the "access.log" file in the data directory to inspect incoming connections:', color.green(getAccessLogPath()));
-    }
-    console.log('\n' + getSeparator(plainGoToLog.length) + '\n');
-    console.log(goToLog);
-    console.log('\n' + getSeparator(plainGoToLog.length) + '\n');
-
-    setupLogLevel();
-    serverEvents.emit(EVENT_NAMES.SERVER_STARTED, { url: autorunUrl });
-}
-
-/**
- * Registers a not-found error response if a not-found error page exists. Should only be called after all other middlewares have been registered.
- */
 function apply404Middleware() {
     const notFoundWebpage = safeReadFileSync(path.join(serverDirectory, 'public/error/url-not-found.html')) ?? '';
-    app.use((req, res) => {
-        res.status(404).send(notFoundWebpage);
-    });
+    app.use((req, res) => res.status(404).send(notFoundWebpage));
 }
 
-// User storage module needs to be initialized before starting the server
 initUserStorage(globalThis.DATA_ROOT)
     .then(ensurePublicDirectoriesExist)
     .then(migrateUserData)
@@ -384,3 +220,8 @@ initUserStorage(globalThis.DATA_ROOT)
     .then(apply404Middleware)
     .then(() => new ServerStartup(app, cliArgs).start())
     .then(postSetupTasks);
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`\nSillyTavern is listening on port ${PORT}\n`);
+});
