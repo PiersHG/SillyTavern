@@ -1,11 +1,10 @@
 server:
-  port: 5000
+  port: 10000
   listen: true
   cors: true
-  disable_csrf: true  # OK for dev, but set to false in prod
+  disable_csrf: true
   basic_auth: false
   autorun: true
 
 debug: true
 allow_all_ips: true
-whitelist_mode: false
