@@ -1,11 +1,15 @@
-const fs = require('fs');
-const path = require('path');
+import { mkdirSync, existsSync } from 'fs';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
 
-const dataDir = path.join(__dirname, '../data');
+// __dirname workaround for ESM
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
-if (!fs.existsSync(dataDir)) {
+const dataDir = `${__dirname}/../data`;
+
+if (!existsSync(dataDir)) {
   console.log('📁 Creating /data directory...');
-  fs.mkdirSync(dataDir);
+  mkdirSync(dataDir);
 } else {
   console.log('✅ /data already exists');
 }
