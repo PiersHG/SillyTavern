@@ -219,7 +219,7 @@ initUserStorage(globalThis.DATA_ROOT)
 // await preSetupTasks();
     .then(apply404Middleware)
     .then(() => new ServerStartup(app, cliArgs).start())
-    .then(postSetupTasks);
+// await postSetupTasks();
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
