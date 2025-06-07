@@ -127,7 +127,7 @@ function getAllKeys(obj, prefix = '') {
  */
 export function addMissingConfigValues(configPath) {
     try {
-        const defaultConfig = yaml.parse(fs.readFileSync(path.join(serverDirectory, './default/config.yaml'), 'utf8'));
+        const defaultConfig = yaml.parse(fs.readFileSync(path.join(serverDirectory, './config.yaml'), 'utf8'));
         let config = yaml.parse(fs.readFileSync(configPath, 'utf8'));
 
         // Migrate old keys to new keys
