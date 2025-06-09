@@ -9,6 +9,3 @@ server:
 debug: true
 allow_all_ips: true
 whitelist_mode: false
-
-api_keys:
-  openai: ${OPENAI_API_KEY}
