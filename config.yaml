@@ -10,7 +10,5 @@ debug: true
 allow_all_ips: true
 whitelist_mode: false
 
-openai:
-  api_key: ${OPENAI_API_KEY}
-  base_url: https://api.openai.com/v1
-  enabled: true
+api_keys:
+  openai: ${OPENAI_API_KEY}
