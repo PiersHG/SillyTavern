@@ -194,4 +194,11 @@ export function addMissingConfigValues(configPath) {
 export function initConfig(configPath) {
     setConfigFilePath(configPath);
     addMissingConfigValues(configPath);
+
+    try {
+        const parsed = yaml.parse(fs.readFileSync(configPath, 'utf8'));
+        console.log('✅ Config loaded successfully:', parsed);
+    } catch (error) {
+        console.error('❌ Error reading config for verification:', error);
+    }
 }
