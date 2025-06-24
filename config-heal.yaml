@@ -12,6 +12,6 @@ whitelist_mode: false
 
 model:
   provider: mistral
-  endpoint: https://api.mistral.example.com/v1/chat/completions
-  api_key: YOUR_HEAL_MISTRAL_KEY
+  endpoint: https://api.mistral.ai/v1/chat/completions
+  api_key: K0h2MR5WrOs0z46pPodEzWtDdiKMBVmB
   model_name: mistral-7b-instruct
