@@ -1,0 +1,17 @@
+server:
+  port: 10002
+  listen: true
+  cors: true
+  disable_csrf: true
+  basic_auth: false
+  autorun: true
+
+debug: true
+allow_all_ips: true
+whitelist_mode: false
+
+model:
+  provider: mistral
+  endpoint: https://api.mistral.example.com/v1/chat/completions
+  api_key: YOUR_GROW_MISTRAL_KEY
+  model_name: mistral-7b-instruct
