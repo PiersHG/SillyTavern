@@ -9,3 +9,9 @@ server:
 debug: true
 allow_all_ips: true
 whitelist_mode: false
+
+model:
+  provider: mistral
+  endpoint: https://api.mistral.ai/v1/chat/completions
+  api_key: CHeaGGgHW1OpK8sCZRFDBT0vF5NbDlvE
+  model_name: mistral-7b-instruct
