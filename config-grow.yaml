@@ -13,5 +13,5 @@ whitelist_mode: false
 model:
   provider: mistral
   endpoint: https://api.mistral.ai/v1/chat/completions
-  api_key: FrygHs7D0PukteUNgbY86HR6QGfAxxls
+  api_key: /etc/secrets/sam_grow_mistral_api
   model_name: mistral-7b-instruct
