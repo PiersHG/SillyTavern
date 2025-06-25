@@ -554,6 +554,7 @@ module.exports = { getCookieSecret };
         writeFileAtomicSync(cookieSecretPath, secret, { encoding: 'utf8' });
         return secret;
     }
+}
 
 function cookieSecretPathLocation(relativePath) {
     // Ensure it resolves relative to the project root, not caller
@@ -571,6 +572,7 @@ function cookieSecretPathLocation(relativePath) {
     const secret = crypto.randomBytes(64).toString('base64');
     writeFileAtomicSync(cookieSecretPath, secret, { encoding: 'utf8' });
     return secret;
+}
 
 /**
  * Generates a random password salt.
