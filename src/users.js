@@ -529,33 +529,6 @@ function getCookieSecret(dataRoot) {
 }
 
 module.exports = { getCookieSecret };
-    const cliArgs = globalThis.COMMAND_LINE_ARGS;
-
-    const cookieSecretPath = cliArgs?.cookie_secret_file
-        ? path.resolve(cliArgs.cookie_secret_file.startsWith('~')
-            ? path.join(process.env.HOME || process.env.USERPROFILE, cliArgs.cookie_secret_file.slice(1))
-            : cliArgs.cookie_secret_file)
-        : path.resolve(dataRoot, 'cookie-secret.txt');
-
-    try {
-        return fs.readFileSync(cookieSecretPath, 'utf8').trim();
-    } catch (error) {
-        console.warn(`❌ Failed to read cookie secret file: ${cookieSecretPath}`, error);
-
-        const oldSecret = getConfigValue(STORAGE_KEYS.cookieSecret);
-        if (oldSecret) {
-            console.log('Migrating cookie secret from config.yaml...');
-            writeFileAtomicSync(cookieSecretPath, oldSecret, { encoding: 'utf8' });
-            return oldSecret;
-        }
-
-        console.warn(color.yellow('Cookie secret is missing from data root. Generating a new one...'));
-        const secret = crypto.randomBytes(64).toString('base64');
-        writeFileAtomicSync(cookieSecretPath, secret, { encoding: 'utf8' });
-        return secret;
-    }
-}
-
 function cookieSecretPathLocation(relativePath) {
     // Ensure it resolves relative to the project root, not caller
     return path.join(serverDirectory, relativePath);
