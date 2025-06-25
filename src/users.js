@@ -524,14 +524,16 @@ export async function initUserStorage(dataRoot) {
  * @param {string} dataRoot The root directory for user data
  * @returns {string} The cookie secret
  */
-export function getCookieSecret(dataRoot) {
-    const cookieSecretPath = path.resolve(dataRoot, 'cookie-secret.txt');
+export function getCookieSecret() {
+    const cookieSecretPath = path.resolve('data', 'cookie-secret.txt');
+    console.log('🔐 Using static cookie secret from:', cookieSecretPath);
     try {
         return fs.readFileSync(cookieSecretPath, 'utf8').trim();
     } catch (error) {
         console.error(`❌ Failed to read cookie secret file: ${cookieSecretPath}`, error);
-        throw error;
+        process.exit(1);
     }
+}
 }
     const oldSecret = getConfigValue(STORAGE_KEYS.cookieSecret);
     if (oldSecret) {
