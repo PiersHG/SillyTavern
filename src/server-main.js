@@ -213,15 +213,26 @@ function apply404Middleware() {
     app.use((req, res) => res.status(404).send(notFoundWebpage));
 }
 
+let serverPort = process.env.PORT || 5000;
+
+export function setPort(port) {
+    serverPort = port;
+}
+
 initUserStorage(globalThis.DATA_ROOT)
     .then(ensurePublicDirectoriesExist)
     .then(migrateUserData)
     .then(migrateSystemPrompts)
     .then(verifySecuritySettings)
-    .then(apply404Middleware)
-    .then(() => new ServerStartup(app, cliArgs).start());
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`\nSillyTavern is listening on port ${PORT}\n`);
-});
+    .then(() => {
+        apply404Middleware();
+        return new ServerStartup(app, cliArgs).start();
+    })
+    .then(() => {
+        app.listen(serverPort, () => {
+            console.log(`\n🚀 SillyTavern is listening on port ${serverPort}\n`);
+        });
+    })
+    .catch((error) => {
+        console.error('❌ Server startup failed:', error);
+    });
