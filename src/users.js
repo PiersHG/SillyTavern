@@ -119,7 +119,7 @@ export async function ensurePublicDirectoriesExist() {
             }
         }
     }
-
+    return directoriesList;
 }
 
 /**
@@ -216,7 +216,7 @@ export function cleanUploads() {
 export async function getUserDirectoriesList() {
     const userHandles = await getAllUserHandles();
     const directoriesList = userHandles.map(handle => getUserDirectories(handle));
-
+    return directoriesList;
 }
 
 /**
@@ -431,9 +431,9 @@ export async function migrateSystemPrompts() {
      */
     async function getDefaultSystemPrompts() {
         try {
-
+            return getContentOfType('sysprompt', 'json');
         } catch {
-
+            return [];
         }
     }
 
@@ -487,7 +487,7 @@ export async function migrateSystemPrompts() {
  * @returns {string} The key for the user storage
  */
 export function toKey(handle) {
-
+    return `${KEY_PREFIX}${handle}`;
 }
 
 /**
@@ -496,7 +496,7 @@ export function toKey(handle) {
  * @returns {string} The key for the avatar storage
  */
 export function toAvatarKey(handle) {
-
+    return `${AVATAR_PREFIX}${handle}`;
 }
 
 /**
@@ -538,7 +538,7 @@ module.exports = { getCookieSecret };
         : path.resolve(dataRoot, 'cookie-secret.txt');
 
     try {
-
+        return fs.readFileSync(cookieSecretPath, 'utf8').trim();
     } catch (error) {
         console.warn(`? Failed to read cookie secret file: ${cookieSecretPath}`, error);
 
@@ -546,40 +546,38 @@ module.exports = { getCookieSecret };
         if (oldSecret) {
             console.log('Migrating cookie secret from config.yaml...');
             writeFileAtomicSync(cookieSecretPath, oldSecret, { encoding: 'utf8' });
-
+            return oldSecret;
         }
 
         console.warn(color.yellow('Cookie secret is missing from data root. Generating a new one...'));
         const secret = crypto.randomBytes(64).toString('base64');
         writeFileAtomicSync(cookieSecretPath, secret, { encoding: 'utf8' });
-
+        return secret;
     }
-}
 
 function cookieSecretPathLocation(relativePath) {
     // Ensure it resolves relative to the project root, not caller
-
+    return path.join(serverDirectory, relativePath);
 }
 
     const oldSecret = getConfigValue(STORAGE_KEYS.cookieSecret);
     if (oldSecret) {
         console.log('Migrating cookie secret from config.yaml...');
         writeFileAtomicSync(cookieSecretPath, oldSecret, { encoding: 'utf8' });
-
+        return oldSecret;
     }
 
     console.warn(color.yellow('Cookie secret is missing from data root. Generating a new one...'));
     const secret = crypto.randomBytes(64).toString('base64');
     writeFileAtomicSync(cookieSecretPath, secret, { encoding: 'utf8' });
-
-}
+    return secret;
 
 /**
  * Generates a random password salt.
  * @returns {string} The password salt
  */
 export function getPasswordSalt() {
-
+    return crypto.randomBytes(16).toString('base64');
 }
 
 /**
@@ -590,7 +588,7 @@ export function getCookieSessionName() {
     // Get server hostname and hash it to generate a session suffix
     const hostname = os.hostname() || 'localhost';
     const suffix = crypto.createHash('sha256').update(hostname).digest('hex').slice(0, 8);
-
+    return `session-${suffix}`;
 }
 
 export function getSessionCookieAge() {
@@ -599,17 +597,17 @@ export function getSessionCookieAge() {
 
     // Convert to milliseconds
     if (configValue > 0) {
-
+        return configValue * 1000;
     }
 
     // "No expiration" is just 400 days as per RFC 6265
     if (configValue < 0) {
-
+        return 400 * 24 * 60 * 60 * 1000;
     }
 
     // 0 means session cookie is deleted when the browser session ends
     // (depends on the implementation of the browser)
-
+    return undefined;
 }
 
 /**
@@ -619,7 +617,7 @@ export function getSessionCookieAge() {
  * @returns {string} Hashed password
  */
 export function getPasswordHash(password, salt) {
-
+    return crypto.scryptSync(password.normalize(), salt, 64).toString('base64');
 }
 
 /**
@@ -629,7 +627,7 @@ export function getPasswordHash(password, salt) {
  */
 export function getCsrfSecret(request) {
     if (!request || !request.user) {
-
+        return ANON_CSRF_SECRET;
     }
 
     let csrfSecret = readSecret(request.user.directories, STORAGE_KEYS.csrfSecret);
@@ -639,6 +637,7 @@ export function getCsrfSecret(request) {
         writeSecret(request.user.directories, STORAGE_KEYS.csrfSecret, csrfSecret);
     }
 
+    return csrfSecret;
 }
 
 /**
@@ -648,7 +647,7 @@ export function getCsrfSecret(request) {
 export async function getAllUserHandles() {
     const keys = await storage.keys(x => x.key.startsWith(KEY_PREFIX));
     const handles = keys.map(x => x.replace(KEY_PREFIX, ''));
-
+    return handles;
 }
 
 /**
@@ -660,7 +659,7 @@ export function getUserDirectories(handle) {
     if (DIRECTORIES_CACHE.has(handle)) {
         const cache = DIRECTORIES_CACHE.get(handle);
         if (cache) {
-
+            return cache;
         }
     }
 
@@ -669,7 +668,7 @@ export function getUserDirectories(handle) {
         directories[key] = path.join(globalThis.DATA_ROOT, handle, USER_DIRECTORY_TEMPLATE[key]);
     }
     DIRECTORIES_CACHE.set(handle, directories);
-
+    return directories;
 }
 
 /**
@@ -684,7 +683,7 @@ export async function getUserAvatar(handle) {
         const avatar = await storage.getItem(avatarKey);
 
         if (avatar) {
-
+            return avatar;
         }
 
         // Fallback to reading from files if custom avatar is not set
@@ -693,19 +692,19 @@ export async function getUserAvatar(handle) {
         const settings = fs.existsSync(pathToSettings) ? JSON.parse(fs.readFileSync(pathToSettings, 'utf8')) : {};
         const avatarFile = settings?.power_user?.default_persona || settings?.user_avatar;
         if (!avatarFile) {
-
+            return PUBLIC_USER_AVATAR;
         }
         const avatarPath = path.join(directory.avatars, avatarFile);
         if (!fs.existsSync(avatarPath)) {
-
+            return PUBLIC_USER_AVATAR;
         }
         const mimeType = mime.lookup(avatarPath);
         const base64Content = fs.readFileSync(avatarPath, 'base64');
-
+        return `data:${mimeType};base64,${base64Content}`;
     }
     catch {
         // Ignore errors
-
+        return PUBLIC_USER_AVATAR;
     }
 }
 
@@ -715,7 +714,7 @@ export async function getUserAvatar(handle) {
  * @returns {boolean} Whether the user should be redirected to the login page
  */
 export function shouldRedirectToLogin(request) {
-
+    return ENABLE_ACCOUNTS && !request.user;
 }
 
 /**
@@ -727,23 +726,24 @@ export function shouldRedirectToLogin(request) {
  */
 export async function tryAutoLogin(request, basicAuthMode) {
     if (!ENABLE_ACCOUNTS || request.user || !request.session) {
-
+        return false;
     }
 
     if (!request.query.noauto) {
         if (await singleUserLogin(request)) {
-
+            return true;
         }
 
         if (AUTHELIA_AUTH && await autheliaUserLogin(request)) {
-
+            return true;
         }
 
         if (basicAuthMode && PER_USER_BASIC_AUTH && await basicUserLogin(request)) {
-
+            return true;
         }
     }
 
+    return false;
 }
 
 /**
@@ -753,7 +753,7 @@ export async function tryAutoLogin(request, basicAuthMode) {
  */
 async function singleUserLogin(request) {
     if (!request.session) {
-
+        return false;
     }
 
     const userHandles = await getAllUserHandles();
@@ -761,10 +761,10 @@ async function singleUserLogin(request) {
         const user = await storage.getItem(toKey(userHandles[0]));
         if (user && !user.password) {
             request.session.handle = userHandles[0];
-
+            return true;
         }
     }
-
+    return false;
 }
 
 /**
@@ -775,12 +775,12 @@ async function singleUserLogin(request) {
  */
 async function autheliaUserLogin(request) {
     if (!request.session) {
-
+        return false;
     }
 
     const remoteUser = request.get('Remote-User');
     if (!remoteUser) {
-
+        return false;
     }
 
     const userHandles = await getAllUserHandles();
@@ -789,11 +789,11 @@ async function autheliaUserLogin(request) {
             const user = await storage.getItem(toKey(userHandle));
             if (user && user.enabled) {
                 request.session.handle = userHandle;
-
+                return true;
             }
         }
     }
-
+    return false;
 }
 
 /**
@@ -803,19 +803,19 @@ async function autheliaUserLogin(request) {
  */
 async function basicUserLogin(request) {
     if (!request.session) {
-
+        return false;
     }
 
     const authHeader = request.headers.authorization;
 
     if (!authHeader) {
-
+        return false;
     }
 
     const [scheme, credentials] = authHeader.split(' ');
 
     if (scheme !== 'Basic' || !credentials) {
-
+        return false;
     }
 
     const [username, password] = Buffer.from(credentials, 'base64')
@@ -829,11 +829,12 @@ async function basicUserLogin(request) {
             // Verify pass again here just to be sure
             if (user && user.enabled && user.password && user.password === getPasswordHash(password, user.salt)) {
                 request.session.handle = userHandle;
-
+                return true;
             }
         }
     }
 
+    return false;
 }
 
 /**
@@ -851,12 +852,12 @@ export async function setUserDataMiddleware(request, response, next) {
             profile: DEFAULT_USER,
             directories: directories,
         };
-
+        return next();
     }
 
     if (!request.session) {
         console.error('Session not available');
-
+        return response.sendStatus(500);
     }
 
     // If user accounts are enabled, get the user from the session
@@ -864,7 +865,7 @@ export async function setUserDataMiddleware(request, response, next) {
 
     // If we have the only user and it's not password protected, use it
     if (!handle) {
-
+        return next();
     }
 
     /** @type {User} */
@@ -872,12 +873,12 @@ export async function setUserDataMiddleware(request, response, next) {
 
     if (!user) {
         console.error('User not found:', handle);
-
+        return next();
     }
 
     if (!user.enabled) {
         console.error('User is disabled:', handle);
-
+        return next();
     }
 
     const directories = getUserDirectories(handle);
@@ -891,6 +892,7 @@ export async function setUserDataMiddleware(request, response, next) {
         request.session.touch = Date.now();
     }
 
+    return next();
 }
 
 /**
@@ -901,9 +903,10 @@ export async function setUserDataMiddleware(request, response, next) {
  */
 export function requireLoginMiddleware(request, response, next) {
     if (!request.user) {
-
+        return response.sendStatus(403);
     }
 
+    return next();
 }
 
 /**
@@ -914,7 +917,7 @@ export function requireLoginMiddleware(request, response, next) {
 export async function loginPageMiddleware(request, response) {
     if (!ENABLE_ACCOUNTS) {
         console.log('User accounts are disabled. Redirecting to index page.');
-
+        return response.redirect('/');
     }
 
     try {
@@ -922,12 +925,13 @@ export async function loginPageMiddleware(request, response) {
         const autoLogin = await tryAutoLogin(request, basicAuthMode);
 
         if (autoLogin) {
-
+            return response.redirect('/');
         }
     } catch (error) {
         console.error('Error during auto-login:', error);
     }
 
+    return response.sendFile('login.html', { root: path.join(serverDirectory, 'public') });
 }
 
 /**
@@ -936,17 +940,17 @@ export async function loginPageMiddleware(request, response) {
  * @returns {import('express').RequestHandler}
  */
 function createRouteHandler(directoryFn) {
-
+    return async (req, res) => {
         try {
             const directory = directoryFn(req);
             const filePath = decodeURIComponent(req.params[0]);
             const exists = fs.existsSync(path.join(directory, filePath));
             if (!exists) {
-
+                return res.sendStatus(404);
             }
-
+            return res.sendFile(filePath, { root: directory });
         } catch (error) {
-
+            return res.sendStatus(500);
         }
     };
 }
@@ -957,23 +961,24 @@ function createRouteHandler(directoryFn) {
  * @returns {import('express').RequestHandler}
  */
 function createExtensionsRouteHandler(directoryFn) {
-
+    return async (req, res) => {
         try {
             const directory = directoryFn(req);
             const filePath = decodeURIComponent(req.params[0]);
 
             const existsLocal = fs.existsSync(path.join(directory, filePath));
             if (existsLocal) {
-
+                return res.sendFile(filePath, { root: directory });
             }
 
             const existsGlobal = fs.existsSync(path.join(PUBLIC_DIRECTORIES.globalExtensions, filePath));
             if (existsGlobal) {
-
+                return res.sendFile(filePath, { root: PUBLIC_DIRECTORIES.globalExtensions });
             }
 
+            return res.sendStatus(404);
         } catch (error) {
-
+            return res.sendStatus(500);
         }
     };
 }
@@ -987,15 +992,15 @@ function createExtensionsRouteHandler(directoryFn) {
  */
 export function requireAdminMiddleware(request, response, next) {
     if (!request.user) {
-
+        return response.sendStatus(403);
     }
 
     if (request.user.profile.admin) {
-
+        return next();
     }
 
     console.warn('Unauthorized access to admin endpoint:', request.originalUrl);
-
+    return response.sendStatus(403);
 }
 
 /**
@@ -1040,13 +1045,13 @@ export async function createBackupArchive(handle, response) {
  */
 async function getAllUsers() {
     if (!ENABLE_ACCOUNTS) {
-
+        return [];
     }
     /**
      * @type {User[]}
      */
     const users = await storage.values();
-
+    return users;
 }
 
 /**
@@ -1055,7 +1060,7 @@ async function getAllUsers() {
  */
 export async function getAllEnabledUsers() {
     const users = await getAllUsers();
-
+    return users.filter(x => x.enabled);
 }
 
 /**
