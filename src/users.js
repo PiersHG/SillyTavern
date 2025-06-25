@@ -524,7 +524,11 @@ export async function initUserStorage(dataRoot) {
  * @param {string} dataRoot The root directory for user data
  * @returns {string} The cookie secret
  */
-export function getCookieSecret(dataRoot) {
+function getCookieSecret(dataRoot) {
+  // your existing code...
+}
+
+module.exports = { getCookieSecret };
     const cliArgs = globalThis.COMMAND_LINE_ARGS;
 
     const cookieSecretPath = cliArgs?.cookie_secret_file
