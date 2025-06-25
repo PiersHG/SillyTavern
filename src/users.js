@@ -526,16 +526,20 @@ export async function initUserStorage(dataRoot) {
  */
 export function getCookieSecret(dataRoot) {
     const cliArgs = globalThis.COMMAND_LINE_ARGS;
+
     const cookieSecretPath = cliArgs?.cookie_secret_file
-        ? path.resolve(cookieSecretPathLocation(cliArgs.cookie_secret_file))
+        ? path.resolve(cliArgs.cookie_secret_file.startsWith('~')
+            ? path.join(process.env.HOME || process.env.USERPROFILE, cliArgs.cookie_secret_file.slice(1))
+            : cliArgs.cookie_secret_file)
         : path.resolve(dataRoot, 'cookie-secret.txt');
 
     try {
         return fs.readFileSync(cookieSecretPath, 'utf8').trim();
     } catch (error) {
         console.error(`❌ Failed to read cookie secret file: ${cookieSecretPath}`, error);
-        process.exit(1); // Force fail clearly
+        process.exit(1); // fail early
     }
+}
 
 function cookieSecretPathLocation(relativePath) {
     // Ensure it resolves relative to the project root, not caller
