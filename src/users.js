@@ -534,7 +534,7 @@ export function getCookieSecret() {
         process.exit(1);
     }
 }
-}
+
     const oldSecret = getConfigValue(STORAGE_KEYS.cookieSecret);
     if (oldSecret) {
         console.log('Migrating cookie secret from config.yaml...');
