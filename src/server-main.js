@@ -224,13 +224,12 @@ initUserStorage(globalThis.DATA_ROOT)
     .then(migrateUserData)
     .then(migrateSystemPrompts)
     .then(verifySecuritySettings)
+    .then(apply404Middleware)
+    .then(() => new ServerStartup(app, cliArgs).start())
     .then(() => {
-        apply404Middleware();
-        return new ServerStartup(app, cliArgs).start();
-    })
-    .then(() => {
-        app.listen(serverPort, () => {
-            console.log(`\n🚀 SillyTavern is listening on port ${serverPort}\n`);
+        const PORT = process.env.PORT || serverPort || 5000;
+        app.listen(PORT, () => {
+            console.log(`\n🚀 SillyTavern is listening on port ${PORT}\n`);
         });
     })
     .catch((error) => {
