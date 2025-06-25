@@ -104,7 +104,6 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '200mb' }));
 const CORS = cors({ origin: 'null', methods: ['OPTIONS'] });
 app.use(CORS);
 
-// 🔥 OVERRIDE WHITELIST MODE
 cliArgs.whitelistMode = false;
 
 if (cliArgs.listen && cliArgs.basicAuthMode) {
@@ -135,7 +134,7 @@ app.use(cookieSession({
     sameSite: 'lax',
     httpOnly: true,
     maxAge: getSessionCookieAge(),
-    secret: getCookieSecret(globalThis.DATA_ROOT),
+    secret: getCookieSecret(cliArgs.dataRoot, cliArgs.cookieSecretFile),
 }));
 
 app.use(setUserDataMiddleware);
