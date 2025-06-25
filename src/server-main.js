@@ -219,7 +219,7 @@ export function setPort(port) {
     serverPort = port;
 }
 
-initUserStorage(globalThis.DATA_ROOT)
+await initUserStorage(globalThis.DATA_ROOT)
     .then(ensurePublicDirectoriesExist)
     .then(migrateUserData)
     .then(migrateSystemPrompts)
@@ -229,9 +229,9 @@ initUserStorage(globalThis.DATA_ROOT)
     .then(() => {
         const PORT = process.env.PORT || serverPort || 5000;
         app.listen(PORT, () => {
-            console.log(`\n?? SillyTavern is listening on port ${PORT}\n`);
+            console.log(`\n✅ SillyTavern is listening on port ${PORT}\n`);
         });
     })
     .catch((error) => {
-        console.error('? Server startup failed:', error);
+        console.error('❌ Server startup failed:', error);
     });
