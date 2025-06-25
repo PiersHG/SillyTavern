@@ -167,9 +167,9 @@ app.get('/', getCacheBusterMiddleware(), (req, res) => {
     if (shouldRedirectToLogin(req)) {
         const query = req.url.split('?')[1];
         const redirectUrl = query ? `/login?${query}` : '/login';
-app.get("/autofix-redirect", (req, res) => { return res.redirect(redirectUrl); });
+        return res.redirect(redirectUrl);
     }
-app.get("/autofix-sendfile", (req, res) => { return res.sendFile('index.html', { root: path.join(serverDirectory, 'public') }); });
+    return res.sendFile('index.html', { root: path.join(serverDirectory, 'public') });
 });
 
 app.get('/callback/:source?', (req, res) => {
@@ -179,7 +179,7 @@ app.get('/callback/:source?', (req, res) => {
     source && searchParams.set('source', source);
     query && searchParams.set('query', query);
     const path = `/?${searchParams.toString()}`;
-app.get("/autofix-redirect", (req, res) => { return res.redirect(307, path); });
+    return res.redirect(307, path);
 });
 
 app.get('/login', loginPageMiddleware);
