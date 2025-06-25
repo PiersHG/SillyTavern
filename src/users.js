@@ -536,8 +536,19 @@ export function getCookieSecret(dataRoot) {
     try {
         return fs.readFileSync(cookieSecretPath, 'utf8').trim();
     } catch (error) {
-        console.error(`❌ Failed to read cookie secret file: ${cookieSecretPath}`, error);
-        process.exit(1); // fail early
+        console.warn(`❌ Failed to read cookie secret file: ${cookieSecretPath}`, error);
+
+        const oldSecret = getConfigValue(STORAGE_KEYS.cookieSecret);
+        if (oldSecret) {
+            console.log('Migrating cookie secret from config.yaml...');
+            writeFileAtomicSync(cookieSecretPath, oldSecret, { encoding: 'utf8' });
+            return oldSecret;
+        }
+
+        console.warn(color.yellow('Cookie secret is missing from data root. Generating a new one...'));
+        const secret = crypto.randomBytes(64).toString('base64');
+        writeFileAtomicSync(cookieSecretPath, secret, { encoding: 'utf8' });
+        return secret;
     }
 }
 
