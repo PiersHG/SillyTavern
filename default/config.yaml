@@ -5,6 +5,7 @@ server:
   disable_csrf: true
   basic_auth: false
   autorun: true
+  cookie_secret_file: data/cookie-secret.txt  # ← Add this line
 
 debug: true
 allow_all_ips: true
