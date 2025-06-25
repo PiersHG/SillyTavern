@@ -111,8 +111,9 @@ if (cliArgs.listen && cliArgs.basicAuthMode) {
 }
 
 if (cliArgs.whitelistMode) {
-    const whitelistMiddleware = await getWhitelistMiddleware();
-    app.use(whitelistMiddleware);
+    (async () => {
+        app.use(whitelistMiddleware);
+    })();
 }
 
 if (cliArgs.listen) {
@@ -228,9 +229,9 @@ initUserStorage(globalThis.DATA_ROOT)
     .then(() => {
         const PORT = process.env.PORT || serverPort || 5000;
         app.listen(PORT, () => {
-            console.log(`\n🚀 SillyTavern is listening on port ${PORT}\n`);
+            console.log(`\n?? SillyTavern is listening on port ${PORT}\n`);
         });
     })
     .catch((error) => {
-        console.error('❌ Server startup failed:', error);
+        console.error('? Server startup failed:', error);
     });
