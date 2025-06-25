@@ -111,9 +111,8 @@ if (cliArgs.listen && cliArgs.basicAuthMode) {
 }
 
 if (cliArgs.whitelistMode) {
-    (async () => {
-        app.use(whitelistMiddleware);
-    })();
+    const whitelistMiddleware = await getWhitelistMiddleware();
+    app.use(whitelistMiddleware);
 }
 
 if (cliArgs.listen) {
